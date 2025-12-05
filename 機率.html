@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第一關｜抽球不放回（3D 示範動畫）</title>
+<style>
+body{
+    background:#1b0f33; color:white; font-family:"Noto Sans TC";
+    text-align:center; padding:20px;
+}
+h1{ margin-bottom:20px; }
+
+/* ---------- 主 3D 箱子 (Babylon.js) ---------- */
+#sceneWrapper{
+    margin: 30px auto;
+    width: 400px;
+    height: 300px;
+    position: relative;
+}
+
+#babylonCanvas {
+    width: 100%;
+    height: 100%;
+    border: 2px solid #0ff;
+    border-radius: 10px;
+}
+
+.controls-info {
+    position: absolute;
+    bottom: -25px;
+    left: 0;
+    right: 0;
+    font-size: 12px;
+    color: #0ff;
+    opacity: 0.7;
+}
+
+/* ---------- 選項 ---------- */
+.option{
+    background:#ffcf33; padding:12px; margin:10px auto; width:80%; max-width:300px;
+    border-radius:10px; color:#320e00; font-weight:bold; cursor:pointer;
+}
+.option:hover{ background:#ffe27a; }
+
+.btn{
+    margin-top:20px; padding:10px 20px; font-size:18px;
+    background:#999; border:none; border-radius:10px; color:#000;
+}
+
+/* ---------- 關鍵字 ---------- */
+.keyword{
+    color:#00eaff; font-weight:bold; text-decoration:underline;
+    cursor:pointer;
+}
+
+/* ---------- 側邊說明視窗 ---------- */
+#infoPanel{
+    position:fixed; top:0; right:-350px;
+    width:300px; height:100%;
+    background:#24104a; padding:20px;
+    color:white; transition:0.5s;
+    box-shadow:-5px 0 15px rgba(0,0,0,.5);
+    z-index: 1000;
+}
+#closePanel{
+    margin-top:10px; cursor:pointer; color:#ffcf33; font-weight:bold;
+}
+
+#bagState{
+    margin-top:10px; font-size:14px; color:#fffa;
+}
+
+/* ---------- 3D 示範箱子 ---------- */
+#demoBox {
+    width: 160px; height: 160px;
+    margin: 15px auto;
+    perspective: 500px;
+}
+#demoScene {
+    width: 120px; height: 120px;
+    margin: auto;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-20deg) rotateY(20deg);
+    transition: transform 0.3s;
+}
+.demoFace {
+    position: absolute;
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #fffa;
+    box-sizing: border-box;
+}
+.demoFace.front  { transform: translateZ(60px); }
+.demoFace.back   { transform: rotateY(180deg) translateZ(60px); }
+.demoFace.right  { transform: rotateY(90deg) translateZ(60px); }
+.demoFace.left   { transform: rotateY(-90deg) translateZ(60px); }
+.demoFace.top    { transform: rotateX(90deg) translateZ(60px); }
+.demoFace.bottom { transform: rotateX(-90deg) translateZ(60px); }
+
+.demoBall {
+    width: 35px; height: 35px;
+    border-radius: 50%;
+    position: absolute;
+    top: 10px; left: 42px;
+    font-size: 26px;
+    transition: transform 1s, opacity 0.5s;
+}
+</style>
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+</head>
+
+<body>
+
+<h1>機率-第一關：抽球（不放回）</span></h1>
+
+<!-- 主 3D 箱子 (Babylon.js) -->
+<div id="sceneWrapper">
+    <canvas id="babylonCanvas"></canvas>
+    
+</div>
+
+<h2>題目：</h2>
+<p>
+袋中有 <b>3 顆白球、2 顆黃球、1 顆藍球</b>。<br>
+抽兩球<span class="keyword" onclick="openInfo()">（不放回）</span>，求「第一球為白、第二球為黃」的機率？
+</p>
+
+<div class="option" onclick="check(1)">(1) 1/5</div>
+<div class="option" onclick="check(2)">(2) 3/15</div>
+<div class="option" onclick="check(3)">(3) 3/30</div>
+
+<button class="btn" onclick="location.href='map.html'">返回地圖</button>
+
+<!-- 側邊說明 -->
+<div id="infoPanel">
+    <h3>🔍 什麼是「不放回」？</h3>
+    <p>
+        抽球後，<b>不會放回袋子</b>。<br>
+        所以第二次抽球時，袋中球的總數會變少！
+    </p>
+
+    <p>示範：從原本袋中<b>拿出1個白球和1個黃球</b></p>
+
+    <div id="demoBox">
+        <div id="demoScene">
+            <div class="demoFace front"></div>
+            <div class="demoFace back"></div>
+            <div class="demoFace right"></div>
+            <div class="demoFace left"></div>
+            <div class="demoFace top"></div>
+            <div class="demoFace bottom"></div>
+
+            <!-- 原本袋中的6個球：3白、2黃、1藍 -->
+            <div id="white1" class="demoBall" style="left: 15px; top: 20px;">⚪</div>
+            <div id="white2" class="demoBall" style="left: 50px; top: 15px;">⚪</div>
+            <div id="white3" class="demoBall" style="left: 80px; top: 25px;">⚪</div>
+            <div id="yellow1" class="demoBall" style="left: 25px; top: 60px;">🟡</div>
+            <div id="yellow2" class="demoBall" style="left: 65px; top: 70px;">🟡</div>
+            <div id="blue1" class="demoBall" style="left: 45px; top: 45px;">🔵</div>
+        </div>
+    </div>
+
+    <div id="bagState">袋中：⚪×3 🟡×2 🔵×1</div>
+
+    <p id="closePanel" onclick="closeInfo()">關閉 ✖</p>
+</div>
+
+<script>
+// ---------- Babylon.js 3D 場景 ----------
+const canvas = document.getElementById('babylonCanvas');
+const engine = new BABYLON.Engine(canvas, true);
+
+function createTeachingScene() {
+    const scene = new BABYLON.Scene(engine);
+    
+    // 相機設定
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/4, Math.PI/3, 8, BABYLON.Vector3.Zero(), scene);
+    camera.setTarget(BABYLON.Vector3.Zero());
+    // 在新版 Babylon.js 中，相機控制會自動附加到場景
+    // camera.attachControls(canvas);
+    
+    // 光源
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 0.8;
+    
+    const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -1, -1), scene);
+    dirLight.intensity = 0.4;
+    
+    // 創建透明立方體容器
+    const boxSize = 3;
+    const thickness = 0.05;
+    
+    // 立方體邊框材質
+    const frameMat = new BABYLON.StandardMaterial("frameMat", scene);
+    frameMat.wireframe = true;
+    frameMat.diffuseColor = new BABYLON.Color3(0, 1, 1); // 青色邊框
+    frameMat.emissiveColor = new BABYLON.Color3(0, 0.3, 0.3);
+    
+    // 立方體邊框
+    const frame = BABYLON.MeshBuilder.CreateBox("frame", { size: boxSize }, scene);
+    frame.material = frameMat;
+    
+    // 透明牆面材質
+    const wallMat = new BABYLON.StandardMaterial("wall", scene);
+    wallMat.diffuseColor = new BABYLON.Color3(0.2, 0.7, 1);
+    wallMat.alpha = 0.1;
+    
+    // 創建六面牆（可選，增加立體感）
+    const walls = [
+        { size: [boxSize, thickness, boxSize], pos: [0, -boxSize/2, 0] }, // 底
+        { size: [boxSize, thickness, boxSize], pos: [0, boxSize/2, 0] },  // 頂
+        { size: [thickness, boxSize, boxSize], pos: [-boxSize/2, 0, 0] }, // 左
+        { size: [thickness, boxSize, boxSize], pos: [boxSize/2, 0, 0] },  // 右
+        { size: [boxSize, boxSize, thickness], pos: [0, 0, boxSize/2] },  // 前
+        { size: [boxSize, boxSize, thickness], pos: [0, 0, -boxSize/2] }  // 後
+    ];
+    
+    walls.forEach((wall, i) => {
+        const mesh = BABYLON.MeshBuilder.CreateBox(`wall${i}`, {
+            width: wall.size[0],
+            height: wall.size[1],
+            depth: wall.size[2]
+        }, scene);
+        mesh.position = new BABYLON.Vector3(...wall.pos);
+        mesh.material = wallMat;
+    });
+    
+    // 創建球體 - 按照題目要求：3白、2黃、1藍
+    const ballRadius = 0.15;
+    const balls = [];
+    
+    // 球體位置（手動設置以避免重疊）
+    const ballPositions = [
+        // 3個白球
+        [-0.8, -0.5, 0.3],
+        [0.6, -0.3, -0.4],
+        [-0.2, 0.4, 0.7],
+        // 2個黃球
+        [0.8, 0.6, 0.2],
+        [-0.5, 0.2, -0.6],
+        // 1個藍球
+        [0.3, -0.7, -0.1]
+    ];
+    
+    const ballColors = [
+        // 白球
+        [1, 1, 1], [1, 1, 1], [1, 1, 1],
+        // 黃球
+        [1, 1, 0.2], [1, 1, 0.2],
+        // 藍球
+        [0.2, 0.4, 1]
+    ];
+    
+    for (let i = 0; i < 6; i++) {
+        const ball = BABYLON.MeshBuilder.CreateSphere(`ball${i}`, { diameter: ballRadius * 2 }, scene);
+        ball.position = new BABYLON.Vector3(...ballPositions[i]);
+        
+        const mat = new BABYLON.StandardMaterial(`ballMat${i}`, scene);
+        mat.diffuseColor = new BABYLON.Color3(...ballColors[i]);
+        mat.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+        ball.material = mat;
+        
+        balls.push(ball);
+    }
+    
+    // 添加旋轉動畫
+    let rotationSpeed = 0;
+    scene.registerBeforeRender(() => {
+        rotationSpeed += 0.002;
+        frame.rotation.y = rotationSpeed * 0.5;
+        
+        // 輕微晃動球體
+        balls.forEach((ball, i) => {
+            ball.position.y += Math.sin(rotationSpeed * 2 + i) * 0.001;
+        });
+    });
+    
+    return scene;
+}
+
+const teachingScene = createTeachingScene();
+
+engine.runRenderLoop(() => {
+    teachingScene.render();
+});
+
+window.addEventListener('resize', () => {
+    engine.resize();
+});
+
+// ---------- 側邊示範動畫 ----------
+function openInfo(){
+    document.getElementById("infoPanel").style.right = "0";
+
+    // 重置所有球的位置和透明度
+    const allBalls = ['white1', 'white2', 'white3', 'yellow1', 'yellow2', 'blue1'];
+    allBalls.forEach(ballId => {
+        const ball = document.getElementById(ballId);
+        if (ball) {
+            ball.style.transform = "translate3d(0px,0px,0px)";
+            ball.style.opacity = 1;
+        }
+    });
+
+    const bag = document.getElementById("bagState");
+    bag.textContent = "袋中：⚪×3 🟡×2 🔵×1 (原始狀態)";
+
+    // 第一步：拿出1個白球 (white3)
+    setTimeout(()=>{
+        const white3 = document.getElementById("white3");
+        if (white3) {
+            white3.style.transform = "translate3d(0px,-100px,60px)";
+            white3.style.opacity = 0.2;
+        }
+        bag.textContent = "袋中：⚪×2 🟡×2 🔵×1";
+    }, 1000);
+
+    // 第二步：拿出1個黃球 (yellow2)
+    setTimeout(()=>{
+        const yellow2 = document.getElementById("yellow2");
+        if (yellow2) {
+            yellow2.style.transform = "translate3d(0px,-100px,60px)";
+            yellow2.style.opacity = 0.2;
+        }
+        bag.textContent = "袋中：⚪×2 🟡×1 🔵×1 (最終狀態)";
+    }, 2500);
+}
+
+function closeInfo(){
+    document.getElementById("infoPanel").style.right = "-350px";
+}
+
+// ---------- 檢查答案 ----------
+function check(n){
+    if(n===1){
+        alert('答對了！前往第二關！');
+        localStorage.setItem("stage1","cleared");
+        location.href='stage2.html';
+    }else{
+        alert('答錯了，再試一次！');
+    }
+}
+</script>
+
+</body>
+</html>
